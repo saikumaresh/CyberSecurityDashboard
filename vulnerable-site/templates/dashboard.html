@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <!-- Header with Sign Out -->
+    <header class="bg-blue-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Hospital Dashboard</h1>
+            <form action="/logout" method="POST">
+                <button type="submit" class="bg-white text-blue-500 rounded px-4 py-2 font-semibold">Sign Out</button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto mt-8 p-4">
+           <!-- Quick Actions -->
+           <section class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <button class="bg-green-500 text-white p-6 rounded-lg shadow hover:bg-green-600">New Patient</button>
+                <button class="bg-indigo-500 text-white p-6 rounded-lg shadow hover:bg-indigo-600">Appointments</button>
+                <button class="bg-yellow-500 text-white p-6 rounded-lg shadow hover:bg-yellow-600">Lab Results</button>
+                <button class="bg-red-500 text-white p-6 rounded-lg shadow hover:bg-red-600">Emergency</button>
+            </div>
+        </section>
+        
+        <!-- Patient Records Section -->
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Patient Records</h2>
+            <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Name</th>
+                        <th class="py-2 px-4 text-left">Age</th>
+                        <th class="py-2 px-4 text-left">Diagnosis</th>
+                        <th class="py-2 px-4 text-left">Last Visit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td class="py-2 px-4">{{ patient[1] }}</td>
+                        <td class="py-2 px-4">{{ patient[2] }}</td>
+                        <td class="py-2 px-4">{{ patient[3] }}</td>
+                        <td class="py-2 px-4">{{ patient[4] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Add New Patient Form -->
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Add New Patient</h2>
+            <form action="/add_patient" method="POST" class="bg-white p-4 shadow-md rounded-lg">
+                <input type="text" name="name" placeholder="Patient Name" class="border p-2 mb-4 w-full" required>
+                <input type="number" name="age" placeholder="Age" class="border p-2 mb-4 w-full" required>
+                <input type="text" name="diagnosis" placeholder="Diagnosis" class="border p-2 mb-4 w-full" required>
+                <input type="date" name="last_visit" class="border p-2 mb-4 w-full" required>
+                <button type="submit" class="bg-blue-500 text-white p-2 rounded">Add Patient</button>
+            </form>
+        </section>
+
+        <!-- Appointment Schedule Section -->
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Appointments</h2>
+            <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Patient Name</th>
+                        <th class="py-2 px-4 text-left">Date</th>
+                        <th class="py-2 px-4 text-left">Time</th>
+                        <th class="py-2 px-4 text-left">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                    <tr>
+                        <td class="py-2 px-4">{{ appointment[1] }}</td>
+                        <td class="py-2 px-4">{{ appointment[2] }}</td>
+                        <td class="py-2 px-4">{{ appointment[3] }}</td>
+                        <td class="py-2 px-4">{{ appointment[4] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Add Appointment Form -->
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Schedule Appointment</h2>
+            <form action="/add_appointment" method="POST" class="bg-white p-4 shadow-md rounded-lg">
+                <input type="text" name="patient_name" placeholder="Patient Name" class="border p-2 mb-4 w-full" required>
+                <input type="date" name="date" class="border p-2 mb-4 w-full" required>
+                <input type="time" name="time" class="border p-2 mb-4 w-full" required>
+                <input type="text" name="reason" placeholder="Reason" class="border p-2 mb-4 w-full" required>
+                <button type="submit" class="bg-blue-500 text-white p-2 rounded">Schedule Appointment</button>
+            </form>
+        </section>
+    </main>
+
+</body>
+</html>

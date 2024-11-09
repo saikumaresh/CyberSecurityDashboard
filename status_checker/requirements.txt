@@ -1,0 +1,6 @@
+requests
+scapy
+schedule
+numpy
+cython
+scipy

@@ -1,0 +1,44 @@
+version: '4'
+
+services:
+  vulnerable-site:
+    build: ./vulnerable-site
+    ports:
+      - "5000:5000"
+    environment:
+      - DASHBOARD_URL=http://dashboard:5001/report-attack
+    depends_on:
+      - dashboard
+    networks:
+      - mynetwork
+    volumes:
+      - persistent-storage:/persistent
+      - shared-storage:/shared  # Add this shared volume for PCAP files
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "5001:5001"
+    networks:
+      - mynetwork
+    volumes:
+      - persistent-storage:/persistent
+
+  status-checker:
+    build: ./status_checker
+    networks:
+      - mynetwork
+    volumes:
+      - persistent-storage:/persistent
+      - ./status_checker/pcap_files:/app/pcap_files  # Mount local pcap_files to /app/pcap_files inside the container
+      - shared-storage:/shared  # Mount shared volume to allow access to PCAP files
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  persistent-storage:
+    driver: local
+  shared-storage:  # Define shared storage for PCAP files
+    driver: local
