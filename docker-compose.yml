@@ -31,7 +31,7 @@ services:
 
   dashboard:
     build:
-      context: ./dashboard  # Set build context to the 'dashboard' directory
+      context: ./dashboard
       dockerfile: Dockerfile
     ports:
       - "5001:5001"

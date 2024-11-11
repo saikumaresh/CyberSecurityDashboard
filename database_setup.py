@@ -1,22 +1,10 @@
 import sqlite3
-import os
 
-# Define the path for the shared SQLite database
-db_path = '/persistent/database.db'
-
-# Check if the database file already exists
-db_exists = os.path.exists(db_path)
-
-# Connect to the SQLite database
-conn = sqlite3.connect(db_path)
+# Connect to the shared database file
+conn = sqlite3.connect('/persistent/database.db')
 cur = conn.cursor()
 
-if not db_exists:
-    print("Creating database and tables...")
-else:
-    print("Database already exists, ensuring tables are set up...")
-
-# Create table for system status
+# Create system_status table (used by dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS system_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +14,7 @@ CREATE TABLE IF NOT EXISTS system_status (
 )
 ''')
 
-# Create table for attack logs
+# Create attack_logs table (used by dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS attack_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +23,29 @@ CREATE TABLE IF NOT EXISTS attack_logs (
 )
 ''')
 
-# Commit and close the connection
+# Create patients table (used by vulnerable-site)
+cur.execute('''
+CREATE TABLE IF NOT EXISTS patients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    condition TEXT
+)
+''')
+
+# Create appointments table (used by vulnerable-site)
+cur.execute('''
+CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER,
+    date TEXT,
+    time TEXT,
+    description TEXT,
+    FOREIGN KEY(patient_id) REFERENCES patients(id)
+)
+''')
+
+# Commit changes and close the connection
 conn.commit()
 conn.close()
 
