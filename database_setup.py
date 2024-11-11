@@ -1,10 +1,20 @@
 import sqlite3
+import os
 
-# Create or connect to the SQLite database
-conn = sqlite3.connect('/persistent/dashboard.db')
+# Define the path for the shared SQLite database
+db_path = '/persistent/database.db'
 
-# Create a cursor
+# Check if the database file already exists
+db_exists = os.path.exists(db_path)
+
+# Connect to the SQLite database
+conn = sqlite3.connect(db_path)
 cur = conn.cursor()
+
+if not db_exists:
+    print("Creating database and tables...")
+else:
+    print("Database already exists, ensuring tables are set up...")
 
 # Create table for system status
 cur.execute('''

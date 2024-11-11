@@ -12,8 +12,8 @@ services:
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent
-      - shared-storage:/shared  # Add this shared volume for PCAP files
+      - persistent-storage:/persistent  # Shared database volume
+      - shared-storage:/shared          # Shared volume for other files like PCAP files
 
   dashboard:
     build: ./dashboard
@@ -22,14 +22,14 @@ services:
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent
+      - persistent-storage:/persistent  # Shared database volume
 
   status-checker:
     build: ./status_checker
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent
+      - persistent-storage:/persistent  # Shared database volume
       - ./status_checker/pcap_files:/app/pcap_files  # Mount local pcap_files to /app/pcap_files inside the container
       - shared-storage:/shared  # Mount shared volume to allow access to PCAP files
 
@@ -40,5 +40,5 @@ networks:
 volumes:
   persistent-storage:
     driver: local
-  shared-storage:  # Define shared storage for PCAP files
+  shared-storage:
     driver: local
