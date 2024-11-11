@@ -30,7 +30,9 @@ services:
       - shared-storage:/shared          # Shared volume for other files like PCAP files
 
   dashboard:
-    build: ./dashboard
+    build:
+      context: .              # Set build context to the project root directory
+      dockerfile: ./dashboard/Dockerfile
     ports:
       - "5001:5001"
     depends_on:
