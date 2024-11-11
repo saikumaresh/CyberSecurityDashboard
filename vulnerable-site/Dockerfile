@@ -13,12 +13,8 @@ RUN pip install --no-cache-dir Flask requests scapy
 # Expose the port that Flask will use
 EXPOSE 5000
 
-# Run the database setup script
-RUN python setup_db.py
-
 # Define environment variable
 ENV FLASK_APP=app.py
 
 # Run flask when the container launches
 CMD ["flask", "run", "--host=0.0.0.0"]
-
