@@ -12,7 +12,7 @@ DASHBOARD_URL = "http://dashboard:5001/report-attack"  # The dashboard URL to se
 
 # Function to create a SQLite database for users
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/persistent/database.db')
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
     c.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
@@ -60,7 +60,7 @@ def dashboard():
         return redirect('/login')
 
     # Fetch data for patients and appointments
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/persistent/database.db')
     c = conn.cursor()
     c.execute("SELECT * FROM patients")
     patients = c.fetchall()
@@ -81,7 +81,7 @@ def add_patient():
     diagnosis = request.form['diagnosis']
     last_visit = request.form['last_visit']
     
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/persistent/database.db')
     c = conn.cursor()
     c.execute("INSERT INTO patients (name, age, diagnosis, last_visit) VALUES (?, ?, ?, ?)", 
               (name, age, diagnosis, last_visit))
@@ -102,7 +102,7 @@ def add_appointment():
     time = request.form['time']
     reason = request.form['reason']
     
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/persistent/database.db')
     c = conn.cursor()
     c.execute("INSERT INTO appointments (patient_name, date, time, reason) VALUES (?, ?, ?, ?)", 
               (patient_name, date, time, reason))
@@ -143,7 +143,7 @@ def login():
                 break
 
         # SQL Vulnerability: Building SQL query without parameterization
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect('/persistent/database.db')
         c = conn.cursor()
         query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
         
