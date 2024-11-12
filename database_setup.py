@@ -1,10 +1,26 @@
 import sqlite3
+import os
 
-# Connect to the shared database file
-conn = sqlite3.connect('/persistent/database.db')
+# Define the path to the database file
+db_path = '/persistent/dashboard.db'
+
+# Ensure the directory exists
+os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+# Connect to the database
+conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-# Create system_status table (used by dashboard)
+# Create users table for authentication (if required by the application)
+cur.execute('''
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+)
+''')
+
+# Create system_status table (for dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS system_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,7 +30,7 @@ CREATE TABLE IF NOT EXISTS system_status (
 )
 ''')
 
-# Create attack_logs table (used by dashboard)
+# Create attack_logs table (for dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS attack_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +39,7 @@ CREATE TABLE IF NOT EXISTS attack_logs (
 )
 ''')
 
-# Create patients table (used by vulnerable-site)
+# Create patients table (for vulnerable-site)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS patients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +49,7 @@ CREATE TABLE IF NOT EXISTS patients (
 )
 ''')
 
-# Create appointments table (used by vulnerable-site)
+# Create appointments table (for vulnerable-site)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

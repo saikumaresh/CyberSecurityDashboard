@@ -4,7 +4,7 @@ services:
   database_initializer:
     image: python:3.12-slim
     volumes:
-      - persistent-storage:/persistent
+      - persistent-storage:/persistent  # Shared database volume
       - ./database_setup.py:/app/database_setup.py
     working_dir: /app
     command: ["python", "database_setup.py"]
