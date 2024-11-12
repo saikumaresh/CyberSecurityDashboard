@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS users (
 ''')
 print("Table 'users' created successfully.")
 
+cur.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
+cur.execute("INSERT INTO users (username, password) VALUES ('user1', 'password1')")
+
 cur.execute('''
 CREATE TABLE IF NOT EXISTS system_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
