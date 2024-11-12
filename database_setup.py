@@ -2,16 +2,19 @@ import sqlite3
 import os
 
 # Define the path to the database file
-db_path = '/persistent/dashboard.db'
+db_path = '/persistent/database.db'
 
 # Ensure the directory exists
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+# Print the absolute path for debugging
+print(f"Database file path: {os.path.abspath(db_path)}")
 
 # Connect to the database
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-# Create users table for authentication (if required by the application)
+# Create tables as before
 cur.execute('''
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,8 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT
 )
 ''')
+print("Table 'users' created successfully.")
 
-# Create system_status table (for dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS system_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,8 +32,8 @@ CREATE TABLE IF NOT EXISTS system_status (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 ''')
+print("Table 'system_status' created successfully.")
 
-# Create attack_logs table (for dashboard)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS attack_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,8 +41,8 @@ CREATE TABLE IF NOT EXISTS attack_logs (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 ''')
+print("Table 'attack_logs' created successfully.")
 
-# Create patients table (for vulnerable-site)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS patients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,8 +51,8 @@ CREATE TABLE IF NOT EXISTS patients (
     condition TEXT
 )
 ''')
+print("Table 'patients' created successfully.")
 
-# Create appointments table (for vulnerable-site)
 cur.execute('''
 CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,6 +63,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     FOREIGN KEY(patient_id) REFERENCES patients(id)
 )
 ''')
+print("Table 'appointments' created successfully.")
 
 # Commit changes and close the connection
 conn.commit()
