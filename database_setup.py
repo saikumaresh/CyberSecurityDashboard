@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS appointments (
 ''')
 print("Table 'appointments' created successfully.")
 
+# Create system_status table
+cur.execute('''
+CREATE TABLE IF NOT EXISTS system_status (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    network_status TEXT,
+    ml_detection_status TEXT,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+''')
+print("Table 'system_status' created successfully.")
+
 # Commit changes and close the connection
 conn.commit()
 conn.close()
