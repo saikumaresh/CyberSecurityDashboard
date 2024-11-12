@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 # Paths for status updates and Kitsune report (stored in a persistent volume)
 STATUS_FILE_PATH = '/persistent/status.json'  # Use /persistent volume for persistence
 KITSUNE_REPORT_PATH = '/persistent/kitsune_report.json'
-DB_PATH = '/persistent/dashboard.db'
+DB_PATH = '/persistent/database.db'
 
 # Initialize status if no file exists
 status_data = {

@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # SQLite database file path
-DB_PATH = '/persistent/dashboard.db'
+DB_PATH = '/persistent/database.db'
 
 # Function to load system status from the database
 def load_system_status():

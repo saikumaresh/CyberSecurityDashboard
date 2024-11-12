@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
 ''')
 print("Table 'users' created successfully.")
 
-cur.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
-cur.execute("INSERT INTO users (username, password) VALUES ('user1', 'password1')")
+#cur.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
+#cur.execute("INSERT INTO users (username, password) VALUES ('user1', 'password1')")
 
 cur.execute('''
 CREATE TABLE IF NOT EXISTS system_status (
@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS patients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     age INTEGER,
+    last_visit TEXT,
+    diagnosis TEXT,
     condition TEXT
 )
 ''')
@@ -62,22 +64,20 @@ CREATE TABLE IF NOT EXISTS appointments (
     patient_id INTEGER,
     date TEXT,
     time TEXT,
+    reason TEXT,
     description TEXT,
+    patient_name TEXT,
     FOREIGN KEY(patient_id) REFERENCES patients(id)
 )
 ''')
 print("Table 'appointments' created successfully.")
 
-# Create system_status table
-cur.execute('''
-CREATE TABLE IF NOT EXISTS system_status (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    network_status TEXT,
-    ml_detection_status TEXT,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-''')
-print("Table 'system_status' created successfully.")
+# Add missed table columns
+
+# cur.execute("ALTER TABLE patients ADD COLUMN diagnosis TEXT")
+# cur.execute("ALTER TABLE patients ADD COLUMN last_visit TEXT")
+# cur.execute("ALTER TABLE appointments ADD COLUMN patient_name TEXT")
+# cur.execute("ALTER TABLE appointments ADD COLUMN reason TEXT")
 
 # Commit changes and close the connection
 conn.commit()
