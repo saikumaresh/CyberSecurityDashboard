@@ -1,20 +1,22 @@
-from flask import Flask, request, jsonify, render_template
 import sqlite3
-import os
+from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
 
-# SQLite database file path
+# Database path
 DB_PATH = '/persistent/database.db'
 
 # Function to load system status from the database
 def load_system_status():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute('SELECT network_status, ml_detection_status, last_updated FROM system_status ORDER BY id DESC LIMIT 1')
-    status = cur.fetchone()
-    conn.close()
-    
+    try:
+        cur.execute('SELECT network_status, ml_detection_status, last_updated FROM system_status ORDER BY id DESC LIMIT 1')
+        status = cur.fetchone()
+        print("System Status:", status)  # Debugging line
+    finally:
+        conn.close()
+
     if status:
         return {
             "network_status": status[0] if status[0] else "Unknown",
@@ -22,7 +24,6 @@ def load_system_status():
             "last_updated": status[2] if status[2] else "N/A"
         }
     else:
-        # Return default if no data is found
         return {
             "network_status": "Unknown",
             "ml_detection_status": "Not Started",
@@ -33,9 +34,12 @@ def load_system_status():
 def load_attack_logs():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute('SELECT attack_type, timestamp FROM attack_logs ORDER BY timestamp DESC')
-    logs = cur.fetchall()
-    conn.close()
+    try:
+        cur.execute('SELECT attack_type, timestamp FROM attack_logs ORDER BY timestamp DESC')
+        logs = cur.fetchall()
+        print("Attack Logs:", logs)  # Debugging line
+    finally:
+        conn.close()
 
     return [{"attack_type": log[0], "timestamp": log[1]} for log in logs]
 

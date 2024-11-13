@@ -5,8 +5,9 @@ import logging
 import requests
 import subprocess
 from scapy.all import rdpcap
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import sqlite3
+import os
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,8 +51,15 @@ def save_status():
     except Exception as e:
         logging.error(f"Error saving status: {e}")
 
+# Convert UTC to IST
+def get_ist_time():
+    utc_time = datetime.now(timezone.utc)
+    ist_time = utc_time + timedelta(hours=5, minutes=30)
+    return ist_time.strftime("%Y-%m-%d %H:%M:%S")
+
 # Function to save attack logs to the database
-def save_attack_log(attack_type, timestamp):
+def save_attack_log(attack_type):
+    timestamp = get_ist_time()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute('INSERT INTO attack_logs (attack_type, timestamp) VALUES (?, ?)', (attack_type, timestamp))
@@ -63,7 +71,7 @@ def update_ml_status(status):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute('UPDATE system_status SET ml_detection_status = ?, last_updated = ? WHERE id = (SELECT MAX(id) FROM system_status)', 
-                (status, datetime.now()))
+                (status, get_ist_time()))
     conn.commit()
     conn.close()
 
@@ -120,8 +128,8 @@ def run_kitsune():
 
         # Append DDoS detection to attack log
         if anomaly_count > 0:
-            status_data["attack_log"].append(f"DDoS attack detected with {anomaly_count} anomalies at {datetime.now()}")
-            save_attack_log('DDoS', datetime.now())  # Save attack log to DB
+            status_data["attack_log"].append(f"DDoS attack detected with {anomaly_count} anomalies at {get_ist_time()}")
+            save_attack_log('DDoS')  # Save attack log to DB
 
         # Update ML Detection status in the database
         update_ml_status("Operational")
@@ -161,6 +169,7 @@ schedule.every(30).minutes.do(run_kitsune)
 run_kitsune()  # Manually trigger Kitsune once for testing
 
 # Start the scheduler
+load_status()  # Load existing status on start
 while True:
     schedule.run_pending()
     time.sleep(1)
