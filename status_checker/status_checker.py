@@ -2,9 +2,8 @@ import schedule
 import time
 import json
 import logging
-import requests
 import subprocess
-from scapy.all import rdpcap
+import requests
 from datetime import datetime, timezone, timedelta
 import sqlite3
 import os
@@ -14,8 +13,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 # Paths for status updates and Kitsune report (stored in a persistent volume)
 STATUS_FILE_PATH = '/persistent/status.json'  # Use /persistent volume for persistence
-KITSUNE_REPORT_PATH = '/persistent/kitsune_report.json'
 DB_PATH = '/persistent/database.db'
+PCAP_FILE_PATH = '/persistent/live_capture.pcap'  # Path to the live capture file
 
 # Initialize status if no file exists
 status_data = {
@@ -66,19 +65,10 @@ def save_attack_log(attack_type):
     conn.commit()
     conn.close()
 
-# Function to update ML Detection status in the database
-# def update_ml_status(status):
-#     conn = sqlite3.connect(DB_PATH)
-#     cur = conn.cursor()
-#     cur.execute('UPDATE system_status SET ml_detection_status = ?, last_updated = ? WHERE id = (SELECT MAX(id) FROM system_status)', 
-#                 (status, get_ist_time()))
-#     conn.commit()
-#     conn.close()
-
+# Update ML status in the database
 def update_ml_status(status):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    # Attempt to insert a row if it doesn't exist, otherwise update
     cur.execute('''
         INSERT INTO system_status (network_status, ml_detection_status, last_updated)
         VALUES (?, ?, ?)
@@ -89,84 +79,61 @@ def update_ml_status(status):
     conn.commit()
     conn.close()
 
-
 # Function to check network status
 def check_network_status():
     logging.debug("Checking network status...")
     try:
-        response = requests.get('http://vulnerable-site:5000', timeout=5)  # Update with Docker service name
-        if response.status_code in [200, 302]:  # Accept 302 redirect as "Active"
+        response = requests.get('http://vulnerable-site:5000', timeout=5)
+        if response.status_code in [200, 302]:
             status_data["network_status"] = "Active"
         else:
             status_data["network_status"] = "Down"
     except Exception as e:
         logging.error(f"Network status check failed: {e}")
         status_data["network_status"] = "Down"
-    
-    # Save updated status
     save_status()
 
-
-# Function to run Kitsune and update ML Detection status
+# Run Kitsune anomaly detection
 def run_kitsune():
     logging.debug("Running Kitsune anomaly detection...")
     try:
-        # Set status to Running
         status_data["ml_detection_status"] = "Running..."
-        check_network_status()
-        update_ml_status("Running")
-        # Example paths - adjust as needed
-        pcap_file = "/app/pcap_files/healthcare.pcapng"
-        kitsune_script = "/app/Kitsune-py/Kitsune.py"
+        save_status()
 
-        # Determine packet limit based on file
-        packet_limit = count_packets(pcap_file)
-        logging.debug(f"Packet limit for Kitsune: {packet_limit}")
+        if not os.path.exists(PCAP_FILE_PATH):
+            logging.error(f"PCAP file not found: {PCAP_FILE_PATH}")
+            status_data["ml_detection_status"] = "Failed"
+            update_ml_status("Failed")
+            save_status()
+            return
 
-        # Run Kitsune script
         result = subprocess.run(
-            ['python', kitsune_script, pcap_file, str(packet_limit)],
+            ['python', '/app/Kitsune-py/Kitsune.py', PCAP_FILE_PATH, '1000'],  # Adjust packet limit as needed
             capture_output=True, text=True
         )
 
         logging.debug(f"Kitsune stdout: {result.stdout}")
         logging.debug(f"Kitsune stderr: {result.stderr}")
 
-        # Extract anomalies detected
         anomaly_count = extract_anomalies(result.stdout)
         logging.debug(f"Anomalies detected: {anomaly_count}")
 
-        # Update DDoS attack count in the status
         status_data["attack_stats"]["DDoS"] = anomaly_count
-
-        # Mark ML Detection as Operational after running successfully
         status_data["ml_detection_status"] = "Operational"
 
-        # Append DDoS detection to attack log
         if anomaly_count > 0:
             status_data["attack_log"].append(f"DDoS attack detected with {anomaly_count} anomalies at {get_ist_time()}")
-            save_attack_log('DDoS')  # Save attack log to DB
+            save_attack_log('DDoS')
 
-        # Update ML Detection status in the database
         update_ml_status("Operational")
 
     except Exception as e:
         logging.error(f"Error running Kitsune: {e}")
         status_data["ml_detection_status"] = "Failed"
         update_ml_status("Failed")
-
-    # Save updated status
     save_status()
 
-# Helper functions
-def count_packets(filepath):
-    try:
-        packets = rdpcap(filepath)
-        return len(packets)
-    except Exception as e:
-        logging.error(f"Error counting packets with Scapy: {e}")
-        return 1000  # Default limit on error
-
+# Extract anomalies from Kitsune output
 def extract_anomalies(kitsune_output):
     try:
         lines = kitsune_output.split('\n')
@@ -179,14 +146,16 @@ def extract_anomalies(kitsune_output):
         return 0
 
 # Schedule tasks
-schedule.every(30).seconds.do(check_network_status)
-schedule.every(30).minutes.do(run_kitsune)
+schedule.every(1).minutes.do(check_network_status)
+schedule.every(3).minutes.do(run_kitsune)
 
-check_network_status()
-run_kitsune()  # Manually trigger Kitsune once for testing
+# Manually trigger Kitsune for testing
+run_kitsune()
+load_status()
 
 # Start the scheduler
-load_status()  # Load existing status on start
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+if __name__ == "__main__":
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+

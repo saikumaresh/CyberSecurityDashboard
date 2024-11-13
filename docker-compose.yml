@@ -1,10 +1,8 @@
-version: '4'
-
 services:
   database_initializer:
     image: python:3.12-slim
     volumes:
-      - persistent-storage:/persistent  # Shared database volume
+      - persistent-storage:/persistent
       - ./database_setup.py:/app/database_setup.py
     working_dir: /app
     command: ["python", "database_setup.py"]
@@ -26,8 +24,8 @@ services:
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent  # Shared database volume
-      - shared-storage:/shared          # Shared volume for other files like PCAP files
+      - persistent-storage:/persistent
+    container_name: vulnerable-site 
 
   dashboard:
     build:
@@ -40,7 +38,7 @@ services:
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent  # Shared database volume
+      - persistent-storage:/persistent
 
   status-checker:
     build: ./status_checker
@@ -49,9 +47,19 @@ services:
     networks:
       - mynetwork
     volumes:
-      - persistent-storage:/persistent  # Shared database volume
-      - ./status_checker/pcap_files:/app/pcap_files  # Mount local pcap_files to /app/pcap_files inside the container
-      - shared-storage:/shared  # Mount shared volume to allow access to PCAP files
+      - persistent-storage:/persistent
+
+  packet-capture:
+    build: ./packet_capture
+    networks:
+      - mynetwork
+    environment:
+      - CAPTURE_INTERFACE=eth0 
+      - VULNERABLE_SITE_IP=vulnerable-site 
+    volumes:
+      - persistent-storage:/persistent
+    cap_add:
+      - NET_ADMIN  # Grants necessary permissions for packet capturing
 
 networks:
   mynetwork:
@@ -59,6 +67,4 @@ networks:
 
 volumes:
   persistent-storage:
-    driver: local
-  shared-storage:
     driver: local
