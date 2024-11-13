@@ -7,7 +7,7 @@ services:
     working_dir: /app
     command: ["python", "database_setup.py"]
     networks:
-      - mynetwork
+      - cyber_network
     deploy:
       restart_policy:
         condition: none
@@ -22,10 +22,10 @@ services:
       - dashboard
       - database_initializer
     networks:
-      - mynetwork
+      - cyber_network
     volumes:
       - persistent-storage:/persistent
-    container_name: vulnerable-site 
+    container_name: vulnerable-site
 
   dashboard:
     build:
@@ -36,7 +36,7 @@ services:
     depends_on:
       - database_initializer
     networks:
-      - mynetwork
+      - cyber_network
     volumes:
       - persistent-storage:/persistent
 
@@ -45,14 +45,14 @@ services:
     depends_on:
       - database_initializer
     networks:
-      - mynetwork
+      - cyber_network
     volumes:
       - persistent-storage:/persistent
 
   packet-capture:
     build: ./packet_capture
     networks:
-      - mynetwork
+      - cyber_network
     environment:
       - CAPTURE_INTERFACE=eth0 
       - VULNERABLE_SITE_IP=vulnerable-site 
@@ -61,8 +61,18 @@ services:
     cap_add:
       - NET_ADMIN  # Grants necessary permissions for packet capturing
 
+  ddos-attacker:
+    build:
+      context: ./ddos-attacker
+    networks:
+      - cyber_network
+    depends_on:
+      - vulnerable-site
+    cap_add:
+      - NET_ADMIN  # Grants necessary permissions for packet flooding
+
 networks:
-  mynetwork:
+  cyber_network:
     driver: bridge
 
 volumes:
