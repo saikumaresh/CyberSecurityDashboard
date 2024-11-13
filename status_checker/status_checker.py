@@ -67,20 +67,35 @@ def save_attack_log(attack_type):
     conn.close()
 
 # Function to update ML Detection status in the database
+# def update_ml_status(status):
+#     conn = sqlite3.connect(DB_PATH)
+#     cur = conn.cursor()
+#     cur.execute('UPDATE system_status SET ml_detection_status = ?, last_updated = ? WHERE id = (SELECT MAX(id) FROM system_status)', 
+#                 (status, get_ist_time()))
+#     conn.commit()
+#     conn.close()
+
 def update_ml_status(status):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute('UPDATE system_status SET ml_detection_status = ?, last_updated = ? WHERE id = (SELECT MAX(id) FROM system_status)', 
-                (status, get_ist_time()))
+    # Attempt to insert a row if it doesn't exist, otherwise update
+    cur.execute('''
+        INSERT INTO system_status (network_status, ml_detection_status, last_updated)
+        VALUES (?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            ml_detection_status = excluded.ml_detection_status,
+            last_updated = excluded.last_updated
+    ''', ("Active", status, get_ist_time()))
     conn.commit()
     conn.close()
+
 
 # Function to check network status
 def check_network_status():
     logging.debug("Checking network status...")
     try:
         response = requests.get('http://vulnerable-site:5000', timeout=5)  # Update with Docker service name
-        if response.status_code == 200:
+        if response.status_code in [200, 302]:  # Accept 302 redirect as "Active"
             status_data["network_status"] = "Active"
         else:
             status_data["network_status"] = "Down"
@@ -91,14 +106,15 @@ def check_network_status():
     # Save updated status
     save_status()
 
+
 # Function to run Kitsune and update ML Detection status
 def run_kitsune():
     logging.debug("Running Kitsune anomaly detection...")
     try:
         # Set status to Running
         status_data["ml_detection_status"] = "Running..."
-        save_status()  # Save running status immediately
-
+        check_network_status()
+        update_ml_status("Running")
         # Example paths - adjust as needed
         pcap_file = "/app/pcap_files/healthcare.pcapng"
         kitsune_script = "/app/Kitsune-py/Kitsune.py"
@@ -163,9 +179,10 @@ def extract_anomalies(kitsune_output):
         return 0
 
 # Schedule tasks
-schedule.every(1).minutes.do(check_network_status)
+schedule.every(30).seconds.do(check_network_status)
 schedule.every(30).minutes.do(run_kitsune)
 
+check_network_status()
 run_kitsune()  # Manually trigger Kitsune once for testing
 
 # Start the scheduler
