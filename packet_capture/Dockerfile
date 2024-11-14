@@ -21,5 +21,8 @@ WORKDIR /app
 # COPY packet_capture.py .
 COPY packet_capture.py /app/packet_capture.py
 
-# Run the packet capture script
-CMD ["python", "packet_capture.py"]
+# # Run the packet capture script
+# CMD ["python", "packet_capture.py"]
+
+# Set the entry point to run the Python script
+ENTRYPOINT ["python", "packet_capture.py"]
