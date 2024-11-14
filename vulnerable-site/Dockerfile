@@ -16,5 +16,9 @@ EXPOSE 5000
 # Define environment variable
 ENV FLASK_APP=app.py
 
+RUN apt-get update && apt-get install -y iproute2
+
+RUN apt-get update && apt-get install -y hping3 iputils-ping tcpdump iproute2 && rm -rf /var/lib/apt/lists/*
+
 # Run flask when the container launches
 CMD ["flask", "run", "--host=0.0.0.0"]

@@ -108,7 +108,7 @@ def run_kitsune():
             return
 
         result = subprocess.run(
-            ['python', '/app/Kitsune-py/Kitsune.py', PCAP_FILE_PATH, '1000'],  # Adjust packet limit as needed
+            ['python', '/app/Kitsune-py/Kitsune.py', PCAP_FILE_PATH, '50000'],  # Adjust packet limit as needed
             capture_output=True, text=True
         )
 
@@ -146,8 +146,8 @@ def extract_anomalies(kitsune_output):
         return 0
 
 # Schedule tasks
-schedule.every(1).minutes.do(check_network_status)
-schedule.every(3).minutes.do(run_kitsune)
+schedule.every(5).minutes.do(check_network_status)
+schedule.every(5).minutes.do(run_kitsune)
 
 # Manually trigger Kitsune for testing
 run_kitsune()

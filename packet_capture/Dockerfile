@@ -9,6 +9,8 @@ RUN apt-get update && \
 # Install PyShark
 RUN pip install pyshark schedule
 
+RUN apt-get update && apt-get install -y iputils-ping hping3 tcpdump iproute2 && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory
 WORKDIR /app
 

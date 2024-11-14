@@ -40,15 +40,6 @@ services:
     volumes:
       - persistent-storage:/persistent
 
-  status-checker:
-    build: ./status_checker
-    depends_on:
-      - database_initializer
-    networks:
-      - cyber_network
-    volumes:
-      - persistent-storage:/persistent
-
   packet-capture:
     build: ./packet_capture
     networks:
@@ -59,7 +50,17 @@ services:
     volumes:
       - persistent-storage:/persistent
     cap_add:
-      - NET_ADMIN  # Grants necessary permissions for packet capturing
+      - NET_ADMIN
+      - NET_RAW
+
+  status-checker:
+    build: ./status_checker
+    depends_on:
+      - database_initializer
+    networks:
+      - cyber_network
+    volumes:
+      - persistent-storage:/persistent
 
   ddos-attacker:
     build:
