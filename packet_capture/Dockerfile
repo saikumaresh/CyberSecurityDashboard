@@ -9,6 +9,9 @@ RUN apt-get update && \
 # Install PyShark
 RUN pip install pyshark schedule
 
+# Install tshark for packet capture
+RUN apt-get update && apt-get install -y tshark
+
 RUN apt-get update && apt-get install -y iputils-ping hping3 tcpdump iproute2 && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory

@@ -146,8 +146,8 @@ def extract_anomalies(kitsune_output):
         return 0
 
 # Schedule tasks
-schedule.every(5).minutes.do(check_network_status)
-schedule.every(5).minutes.do(run_kitsune)
+schedule.every(2).minutes.do(check_network_status)
+schedule.every(2).minutes.do(run_kitsune)
 
 # Manually trigger Kitsune for testing
 run_kitsune()

@@ -1,71 +1,45 @@
-import pyshark
-import schedule
-import time
+import subprocess
 import logging
 import os
-import subprocess
-from datetime import datetime
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define the interface and IP for vulnerable-site traffic
 interface = os.getenv('CAPTURE_INTERFACE', 'eth0')
-vulnerable_site_ip = os.getenv('VULNERABLE_SITE_IP', '172.22.0.10')  # Static IP for vulnerable-site
+vulnerable_site_ip = os.getenv('VULNERABLE_SITE_IP', '172.30.0.10')  # Update with actual IP
 output_file = f'/persistent/live_capture.pcap'
 
-# Function to start packet capture using tcpdump
-def start_tcpdump_capture():
-    tcpdump_command = [
-        'tcpdump', '-i', interface, 'host', vulnerable_site_ip,
-        '-w', output_file
-    ]
-    logging.info(f"Starting tcpdump on {interface} with filter 'host {vulnerable_site_ip}'.")
-
-    # Start tcpdump as a subprocess
-    tcpdump_process = subprocess.Popen(tcpdump_command)
-    return tcpdump_process
-
-# Function to analyze packets in real-time with pyshark
-def analyze_live_packets():
-    try:
-        logging.info(f"Starting live analysis with pyshark on interface {interface} with filter 'host {vulnerable_site_ip}'")
-        live_capture = pyshark.LiveCapture(interface=interface, bpf_filter=f"host {vulnerable_site_ip}")
-
-        # Process each packet as it’s captured
-        for packet in live_capture.sniff_continuously():
-            try:
-                src_ip = packet.ip.src
-                dst_ip = packet.ip.dst
-                protocol = packet.transport_layer
-                src_port = packet[protocol].srcport if protocol in packet else 'N/A'
-                dst_port = packet[protocol].dstport if protocol in packet else 'N/A'
-                logging.info(f"Packet captured: {src_ip}:{src_port} -> {dst_ip}:{dst_port}")
-            except AttributeError:
-                # Skip packets without IP or transport layer
-                continue
-    except Exception as e:
-        logging.error(f"Error during live packet analysis with pyshark: {e}")
-
-# Main function to start tcpdump and real-time packet analysis
-def start_packet_capture():
-    # Start tcpdump capture
-    tcpdump_process = start_tcpdump_capture()
-
-    # Run pyshark live analysis in parallel
-    analyze_live_packets()
-
-    # Run tcpdump for a specific duration (300 seconds), then stop
-    time.sleep(300)
-    tcpdump_process.terminate()
-    logging.info("tcpdump capture stopped.")
-
-# Schedule packet capture every 5 minutes
-schedule.every(5).minutes.do(start_packet_capture)
-
-# Start the scheduler
-if __name__ == "__main__":
-    start_packet_capture()
+# Function to start and stop tshark capture every 2 minutes
+def start_timed_tshark_capture():
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        logging.info(f"Starting tshark on {interface} with filter 'host {vulnerable_site_ip}' for 2 minutes.")
+
+        # Command to capture packets with tshark
+        tshark_command = [
+            'tshark',
+            '-i', interface,                    # Interface to capture on
+            '-f', f'host {vulnerable_site_ip}',  # Capture filter for target IP
+            '-w', output_file,                  # Output file to save the capture
+            '-a', 'duration:120'                # Stop capture after 120 seconds (2 minutes)
+        ]
+
+        # Start tshark as a subprocess and capture packets
+        with subprocess.Popen(tshark_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+            try:
+                # Process output and wait for tshark to complete the 2-minute capture
+                for line in process.stdout:
+                    logging.info(line.strip())  # Log tshark output if needed
+                process.wait()
+                logging.info("tshark capture completed for this interval.")
+            except Exception as e:
+                logging.error(f"Error during packet capture with tshark: {e}")
+            finally:
+                process.terminate()  # Ensure process is terminated
+
+        # Wait for a few seconds before restarting the capture
+        time.sleep(1)  # Add a short delay if needed before restarting the capture
+
+if __name__ == "__main__":
+    start_timed_tshark_capture()
