@@ -50,7 +50,6 @@ services:
     build: ./packet_capture
     #network_mode: host
     networks:
-    #   # - vulnerable_network  # Connect to vulnerable_network to capture its packets
       - cyber_network       # Connect to cyber_network for access to other services
     environment:
       - CAPTURE_INTERFACE=eth0
