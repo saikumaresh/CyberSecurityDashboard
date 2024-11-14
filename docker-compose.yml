@@ -8,6 +8,8 @@ services:
     command: ["python", "database_setup.py"]
     networks:
       - cyber_network
+    environment:
+      - TZ=Asia/Kolkata
     deploy:
       restart_policy:
         condition: none
@@ -15,17 +17,19 @@ services:
   vulnerable-site:
     build: ./vulnerable-site
     ports:
-      - "5000:5000"
+      - "5000:5000"  # Expose port 5000 for external access if needed
     environment:
       - DASHBOARD_URL=http://dashboard:5001/report-attack
+      - TZ=Asia/Kolkata
     depends_on:
       - dashboard
       - database_initializer
     networks:
-      - cyber_network
+      cyber_network:
+        ipv4_address: 172.30.0.10  # Assign a static IP for vulnerable-site
     volumes:
       - persistent-storage:/persistent
-    container_name: vulnerable-site
+    command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 
   dashboard:
     build:
@@ -35,18 +39,22 @@ services:
       - "5001:5001"
     depends_on:
       - database_initializer
+    environment:
+      - TZ=Asia/Kolkata
     networks:
       - cyber_network
     volumes:
       - persistent-storage:/persistent
 
-  packet-capture:
+  packet_capture:
     build: ./packet_capture
     networks:
-      - cyber_network
+      # - vulnerable_network  # Connect to vulnerable_network to capture its packets
+      - cyber_network       # Connect to cyber_network for access to other services
     environment:
-      - CAPTURE_INTERFACE=eth0 
-      - VULNERABLE_SITE_IP=vulnerable-site 
+      - CAPTURE_INTERFACE=eth0
+      - VULNERABLE_SITE_IP=172.30.0.10  # Use the static IP of vulnerable-site for filtering
+      - TZ=Asia/Kolkata
     volumes:
       - persistent-storage:/persistent
     cap_add:
@@ -57,24 +65,32 @@ services:
     build: ./status_checker
     depends_on:
       - database_initializer
+    environment:
+      - TZ=Asia/Kolkata
     networks:
       - cyber_network
     volumes:
       - persistent-storage:/persistent
 
   ddos-attacker:
-    build:
-      context: ./ddos-attacker
+    build: ./ddos-attacker  # Path to your custom Dockerfile for ddos-attacker
     networks:
       - cyber_network
     depends_on:
       - vulnerable-site
     cap_add:
-      - NET_ADMIN  # Grants necessary permissions for packet flooding
+      - NET_ADMIN
+    environment:
+      - TZ=Asia/Kolkata
+    entrypoint: ["hping3", "-I", "eth0", "-S", "--flood", "-V", "-p", "5000", "172.30.0.10"]  # Targeting the new IP for DDoS
+    tty: true
 
 networks:
   cyber_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24  # New unique subnet
 
 volumes:
   persistent-storage:
