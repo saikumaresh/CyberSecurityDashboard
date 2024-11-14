@@ -48,18 +48,19 @@ services:
 
   packet_capture:
     build: ./packet_capture
-    #network_mode: host
-    networks:
-      - cyber_network       # Connect to cyber_network for access to other services
+    network_mode: host
     environment:
       - CAPTURE_INTERFACE=eth0
-      - VULNERABLE_SITE_IP=172.30.0.10  # Use the static IP of vulnerable-site for filtering
+      - VULNERABLE_SITE_IP=172.30.0.10
       - TZ=Asia/Kolkata
+      - KITSUNE_MODE=detect  # or "train" depending on your requirements
+
     volumes:
       - persistent-storage:/persistent
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    restart: unless-stopped
     mem_limit: 1g  # Set memory limit to 1GB
     cpus: 1.0      # Allocate 1 CPU
 

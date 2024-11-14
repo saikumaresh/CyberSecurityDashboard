@@ -11,10 +11,10 @@ import os
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Paths for status updates and Kitsune report (stored in a persistent volume)
-STATUS_FILE_PATH = '/persistent/status.json'  # Use /persistent volume for persistence
+# Paths for status updates and Kitsune report
+STATUS_FILE_PATH = '/persistent/status.json'
 DB_PATH = '/persistent/database.db'
-PCAP_FILE_PATH = '/persistent/live_capture.pcap'  # Path to the live capture file
+PCAP_FILE_PATH = '/persistent/live_capture.pcap'
 
 # Initialize status if no file exists
 status_data = {
@@ -107,8 +107,12 @@ def run_kitsune():
             save_status()
             return
 
+        # Determine mode: "train" or "detect" based on environment variable
+        mode = os.getenv("KITSUNE_MODE", "detect")
+        mode_flag = "--train" if mode == "train" else "--detect"
+        
         result = subprocess.run(
-            ['python', '/app/Kitsune-py/Kitsune.py', PCAP_FILE_PATH, '50000'],  # Adjust packet limit as needed
+            ['python', '/app/Kitsune-py/Kitsune.py', PCAP_FILE_PATH, '50000', mode_flag],
             capture_output=True, text=True
         )
 
@@ -140,6 +144,7 @@ def extract_anomalies(kitsune_output):
         for line in lines:
             if "Anomalies detected" in line:
                 return int(line.split(":")[-1].strip())
+        logging.debug("No anomalies found in Kitsune output.")
         return 0
     except Exception as e:
         logging.error(f"Error extracting anomalies from Kitsune output: {e}")
@@ -147,7 +152,7 @@ def extract_anomalies(kitsune_output):
 
 # Schedule tasks
 schedule.every(2).minutes.do(check_network_status)
-schedule.every(3).minutes.do(run_kitsune)
+schedule.every(2).minutes.do(run_kitsune)
 
 # Manually trigger Kitsune for testing
 run_kitsune()
@@ -158,4 +163,3 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(1)
-
