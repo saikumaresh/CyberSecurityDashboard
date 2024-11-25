@@ -1,9 +1,11 @@
-from flask import Flask, request, render_template, redirect, session,flash
+from flask import Flask, request, render_template, redirect, session, flash
 from markupsafe import escape
 import sqlite3
 import re  # For regex pattern matching
 import requests  # For sending data to the dashboard
 from datetime import datetime
+from ddos_detection import start_ddos_detection
+
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -17,7 +19,7 @@ def init_db():
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)')
     c.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
     c.execute("INSERT INTO users (username, password) VALUES ('user1', 'password1')")
-        # Patients table
+    # Patients table
     c.execute('''CREATE TABLE IF NOT EXISTS patients (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT,
@@ -46,7 +48,6 @@ def report_attack(attack_type):
         print(f"Dashboard response: {response.status_code}, {response.text}")  # Debug output
     except Exception as e:
         print(f"Error reporting attack: {e}")
-
 
 @app.route('/')
 def home():
@@ -173,7 +174,7 @@ def logout():
     session.pop('username', None)
     return redirect('/login')
 
-# Initialize database on startup
 if __name__ == '__main__':
     init_db()
+    start_ddos_detection()  # Initiate DDoS detection in a separate thread
     app.run(debug=True)

@@ -14,6 +14,21 @@ services:
       restart_policy:
         condition: none
 
+  ddos-attacker:
+    build: ./ddos-attacker  # Path to your custom Dockerfile for ddos-attacker
+    networks:
+      cyber_network:
+        ipv4_address: 172.30.0.20  # Assign a static IP
+    depends_on:
+      - vulnerable-site
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - TZ=Asia/Kolkata
+      - VULNERABLE_SITE_IP=172.30.0.10
+    entrypoint: ["hping3", "-I", "eth0", "-S", "--flood", "-V", "-p", "5000", "172.30.0.10"]  # Targeting the new IP for DDoS
+    tty: true
+
   vulnerable-site:
     build: ./vulnerable-site
     ports:
@@ -21,6 +36,7 @@ services:
     environment:
       - DASHBOARD_URL=http://dashboard:5001/report-attack
       - TZ=Asia/Kolkata
+      - CAPTURE_INTERFACE=eth0
     depends_on:
       - dashboard
       - database_initializer
@@ -29,6 +45,9 @@ services:
         ipv4_address: 172.30.0.10  # Assign a static IP for vulnerable-site
     volumes:
       - persistent-storage:/persistent
+    cap_add:
+      - NET_ADMIN
+    privileged: true
     command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 
   dashboard:
@@ -46,23 +65,23 @@ services:
     volumes:
       - persistent-storage:/persistent
 
-  packet_capture:
-    build: ./packet_capture
-    network_mode: host
-    environment:
-      - CAPTURE_INTERFACE=eth0
-      - VULNERABLE_SITE_IP=172.30.0.10
-      - TZ=Asia/Kolkata
-      - KITSUNE_MODE=detect  # or "train" depending on your requirements
+  # packet_capture:
+  #   build: ./packet_capture
+  #   network_mode: host
+  #   environment:
+  #     - CAPTURE_INTERFACE=eth0
+  #     - VULNERABLE_SITE_IP=172.30.0.10
+  #     - TZ=Asia/Kolkata
+  #     - KITSUNE_MODE=detect  # or "train" depending on your requirements
 
-    volumes:
-      - persistent-storage:/persistent
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    restart: unless-stopped
-    mem_limit: 1g  # Set memory limit to 1GB
-    cpus: 1.0      # Allocate 1 CPU
+    # volumes:
+    #   - persistent-storage:/persistent
+    # cap_add:
+    #   - NET_ADMIN
+    #   - NET_RAW
+    # restart: unless-stopped
+    # mem_limit: 1g  # Set memory limit to 1GB
+    # cpus: 1.0      # Allocate 1 CPU
 
   status-checker:
     build: ./status_checker
@@ -70,24 +89,36 @@ services:
       - database_initializer
     environment:
       - TZ=Asia/Kolkata
+      - CAPTURE_INTERFACE=eth0
+      - VULNERABLE_SITE_IP=172.30.0.10
+      - DDOS_PACKET_THRESHOLD=100
     networks:
       - cyber_network
     volumes:
       - persistent-storage:/persistent
-
-  ddos-attacker:
-    build: ./ddos-attacker  # Path to your custom Dockerfile for ddos-attacker
-    networks:
-      - cyber_network
-    depends_on:
-      - vulnerable-site
+      - /var/run/docker.sock:/var/run/docker.sock
     cap_add:
       - NET_ADMIN
-    environment:
-      - TZ=Asia/Kolkata
-      - VULNERABLE_SITE_IP=172.30.0.10
-    entrypoint: ["hping3", "-I", "eth0", "-S", "--flood", "-V", "-p", "5000", "172.30.0.10"]  # Targeting the new IP for DDoS
-    tty: true
+    privileged: true
+    entrypoint: ["python", "status_checker.py"]
+
+  
+  # ids:
+  #   build: ./IDS
+  #   network_mode: host
+  #   environment:
+  #     - CAPTURE_INTERFACE=eth0
+  #     - VULNERABLE_SITE_IP=172.30.0.10
+  #     - TZ=Asia/Kolkata
+  #     - KITSUNE_MODE=detect
+  #   volumes:
+  #     - persistent-storage:/persistent
+  #   cap_add:
+  #     - NET_ADMIN
+  #     - NET_RAW
+  #   restart: unless-stopped
+  #   mem_limit: 1g
+  #   cpus: 1.0
 
 networks:
   cyber_network:

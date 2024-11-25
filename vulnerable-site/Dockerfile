@@ -20,10 +20,11 @@ RUN pip install gunicorn
 # Expose the port that Flask will use
 EXPOSE 5000
 
-# Define environment variable
+# Define environment variables
 ENV FLASK_APP=app.py
 ENV CAPTURE_INTERFACE=eth0
-ENV VULNERABLE_SITE_IP=vulnerable-site
+ENV VULNERABLE_SITE_IP=172.30.0.10
+ENV DDOS_PACKET_THRESHOLD=100
 
 # Run both Flask and packet capture script concurrently
 CMD flask run --host=0.0.0.0

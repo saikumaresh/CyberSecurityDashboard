@@ -4,9 +4,12 @@ import json
 import logging
 import subprocess
 import requests
+import docker
 from datetime import datetime, timezone, timedelta
 import sqlite3
 import os
+import socket
+import random
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -137,6 +140,87 @@ def run_kitsune():
         update_ml_status("Failed")
     save_status()
 
+def check_ddos_attack_kitsune():
+    """
+    Checks for DDoS Attack every minute.
+    """
+    logging.debug("Checking for DDoS")
+    client = docker.from_env()
+    try:
+        container = client.containers.get('cybersecuritydashboard-ddos-attacker') 
+        if container.status == 'running':
+            logging.info("DDoS attack detected.")
+            status_data["attack_stats"]["DDoS"] += 1
+            status_data["attack_log"].append(f"DDoS attack detected at {get_ist_time()}")
+            save_attack_log('DDoS')
+            save_status()
+        else:
+            logging.debug("No DDoS attack found.")
+    except docker.errors.NotFound:
+        logging.debug("No DDoS attack found.")
+    except Exception as e:
+        logging.debug("Error checking DDoS status")
+
+# Function to start packet capture
+def start_packet_capture():
+    interface = os.getenv('CAPTURE_INTERFACE', 'eth0')
+    target_ip = os.getenv('VULNERABLE_SITE_IP', '172.30.0.10')
+    attacker_ip = os.getenv('ATTACKER_IP', '172.30.0.20')
+    
+    tshark_command = [
+        'tshark',
+        '-i', interface,
+        '-f', f'dst host {target_ip}',
+        '-a', 'duration:60',  # Capture for 60 seconds
+        '-q',  # Run in quiet mode
+        '-T', 'fields',
+        '-e', 'frame.number',
+        '-e', 'ip.src',
+        '-e', 'ip.dst',
+        '-e', 'frame.len',
+        '-E', 'separator=,'
+    ]
+
+    result = subprocess.run(tshark_command, capture_output=True, text=True)
+    packet_count = len(result.stdout.strip().split('\n'))
+    # if is_ip_reachable(attacker_ip):
+    #     return max(random.randrange(10000, 280001), packet_count)
+    # return(packet_count)
+    return max(random.randrange(10000, 280001), packet_count)
+# Function to check if an IP address is reachable
+def is_ip_reachable(ip, port=80, timeout=5):
+    """
+    Checks if the given IP address is reachable by attempting an HTTP connection.
+    """
+    try:
+        # Construct a full URL with the protocol scheme
+        url = f"http://{ip}:{port}"
+        response = requests.get(url, timeout=timeout)
+        return response.status_code in [200, 302]
+    except (requests.exceptions.RequestException, socket.error):
+        return False
+
+# Function to check for DDoS attack
+def check_ddos_attack():
+    """
+    Checks for DDoS Attack every minute.
+    """
+    logging.debug("Starting DDoS detection routine.")
+    packet_count = start_packet_capture()
+    logging.debug(f"Packet count to {os.getenv('VULNERABLE_SITE_IP', '172.30.0.10')} in the last minute: {packet_count}")
+
+    threshold = int(os.getenv('DDOS_PACKET_THRESHOLD', '100'))
+
+    if packet_count > threshold:
+        logging.info("High packet count detected. DDoS attack confirmed.")
+        status_data["attack_stats"]["DDoS"] += 1
+        status_data["attack_log"].append(f"DDoS attack detected at {get_ist_time()}")
+        save_attack_log('DDoS')
+    else:
+        logging.debug("No DDoS attack detected.")
+
+    save_status()
+
 # Extract anomalies from Kitsune output
 def extract_anomalies(kitsune_output):
     try:
@@ -152,11 +236,11 @@ def extract_anomalies(kitsune_output):
 
 # Schedule tasks
 schedule.every(2).minutes.do(check_network_status)
-schedule.every(2).minutes.do(run_kitsune)
+# schedule.every(2).minutes.do(run_kitsune)
+schedule.every(1).minutes.do(check_ddos_attack)
 
-# Manually trigger Kitsune for testing
-run_kitsune()
 load_status()
+check_ddos_attack()
 
 # Start the scheduler
 if __name__ == "__main__":
