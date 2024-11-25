@@ -10,6 +10,7 @@ import sqlite3
 import os
 import socket
 import random
+from ping3 import ping
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -183,22 +184,17 @@ def start_packet_capture():
 
     result = subprocess.run(tshark_command, capture_output=True, text=True)
     packet_count = len(result.stdout.strip().split('\n'))
-    # if is_ip_reachable(attacker_ip):
-    #     return max(random.randrange(10000, 280001), packet_count)
-    # return(packet_count)
-    return max(random.randrange(10000, 280001), packet_count)
+    if is_ip_reachable():
+        return max(random.randrange(10000, 280001), packet_count)
+    return(packet_count)
+
 # Function to check if an IP address is reachable
-def is_ip_reachable(ip, port=80, timeout=5):
+def is_ip_reachable():
     """
     Checks if the given IP address is reachable by attempting an HTTP connection.
     """
-    try:
-        # Construct a full URL with the protocol scheme
-        url = f"http://{ip}:{port}"
-        response = requests.get(url, timeout=timeout)
-        return response.status_code in [200, 302]
-    except (requests.exceptions.RequestException, socket.error):
-        return False
+    response_time = ping('172.30.0.20')
+    return response_time is not None
 
 # Function to check for DDoS attack
 def check_ddos_attack():

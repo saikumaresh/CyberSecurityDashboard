@@ -6,3 +6,4 @@ cython
 scipy
 pytz
 docker
+ping3
