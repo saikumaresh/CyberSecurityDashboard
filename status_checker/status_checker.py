@@ -96,7 +96,7 @@ def check_network_status():
         logging.error(f"Network status check failed: {e}")
         status_data["network_status"] = "Down"
     save_status()
-
+# new comment
 # Run Kitsune anomaly detection
 def run_kitsune():
     logging.debug("Running Kitsune anomaly detection...")
